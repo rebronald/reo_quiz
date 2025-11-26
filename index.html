@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Māori Vocabulary Quiz — Standalone</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#10b981;--muted:#94a3b8;--glass:rgba(255,255,255,0.03)}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;color:#e6eef6;background:linear-gradient(180deg,#021124 0%, #071226 100%);-webkit-font-smoothing:antialiased}
+    .app{max-width:900px;margin:0 auto;padding:18px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    h1{font-size:20px;margin:0}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    button{background:var(--glass);border:1px solid rgba(255,255,255,0.04);color:inherit;padding:10px 12px;border-radius:12px;font-weight:600}
+    .modes{display:flex;gap:6px;overflow:auto;padding:12px 0}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:16px;border-radius:14px;margin-top:14px;box-shadow:0 6px 20px rgba(2,6,23,0.6)}
+    .center{display:flex;flex-direction:column;gap:10px;align-items:center}
+    .term{font-size:22px;font-weight:700}
+    .def{font-size:15px;color:var(--muted)}
+    .choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+    .choice{padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);min-height:54px;display:flex;align-items:center;justify-content:center;text-align:center}
+    .choice.correct{outline:3px solid rgba(16,185,129,0.18);}
+    .choice.wrong{opacity:0.6;}
+    footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:12px}
+    .small{font-size:13px;color:var(--muted)}
+    input[type=text]{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    @media (max-width:600px){.choices{grid-template-columns:1fr}}
+    .pill{background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:999px}
+    .progress{height:8px;background:rgba(255,255,255,0.04);border-radius:999px;overflow:hidden}
+    .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#06b6d4)}
+    .download{background:linear-gradient(90deg,#06b6d4,#10b981);color:#042028}
+    .topbar{display:flex;gap:8px;align-items:center}
+    .mode-active{box-shadow:0 6px 18px rgba(2,6,23,0.7);border:1px solid rgba(255,255,255,0.06)}
+    .tiny{font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Māori Vocabulary Trainer</h1>
+        <div class="tiny">Standalone, phone-optimized — multiple modes: Flashcard, Multiple-choice, Type-in, Match</div>
+      </div>
+      <div class="controls">
+        <button id="download" class="download">Download HTML</button>
+        <button id="reset">Reset progress</button>
+      </div>
+    </header>
+
+    <nav class="modes card" role="navigation">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="mode pill mode-active" data-mode="flash">Flashcards</button>
+        <button class="mode pill" data-mode="mc">Multiple-choice</button>
+        <button class="mode pill" data-mode="type">Type-in</button>
+        <button class="mode pill" data-mode="match">Match (pairing)</button>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <div class="tiny">Shuffle: <input type="checkbox" id="shuffle" checked></div>
+        <div class="tiny">Show macrons: <input type="checkbox" id="macrons" checked></div>
+      </div>
+    </nav>
+
+    <main class="card center" id="mainCard">
+      <!-- dynamic content -->
+    </main>
+
+    <footer>
+      <div class="small">Progress: <span id="scoreText">0 / 0</span></div>
+      <div style="flex:1;margin:0 12px"><div class="progress"><i id="bar" style="width:0%"></i></div></div>
+      <div class="small">Mode accuracy: <span id="accuracy">—</span></div>
+    </footer>
+  </div>
+
+<script>
+// DATA: terms and short definitions (from user's list)
+const DATA = [
+  {term:"marae",def:"the area for formal discourse in front of a meeting house; or the whole marae complex"},
+  {term:"Hui",def:"meeting, conference, gathering"},
+  {term:"Haere mai",def:"Welcome! Enter!"},
+  {term:"Nau mai",def:"Welcome!"},
+  {term:"Tangihanga",def:"funeral ceremony in which a body is mourned on a marae"},
+  {term:"Tangi",def:"short (verbal) version for the above; or to cry, to mourn"},
+  {term:"Karanga",def:"the ceremony of calling to the guests to welcome them onto the marae"},
+  {term:"Manuhiri",def:"guests, visitors"},
+  {term:"Tangata whenua",def:"original people belonging to a place, local people, hosts"},
+  {term:"Whaikōrero",def:"the art and practice of speech making"},
+  {term:"Kaikōrero",def:"speaker"},
+  {term:"Haka",def:"chant with dance for the purpose of challenge"},
+  {term:"Waiata",def:"song or chant which follows a speech"},
+  {term:"Koha",def:"gift, present (usually money), given by guest to hosts"},
+  {term:"Whare nui/wharenui",def:"meeting house"},
+  {term:"Whare whakairo",def:"carved meeting house"},
+  {term:"Whare kai",def:"dining hall"},
+  {term:"Whare paku",def:"lavatory, toilet"},
+  {term:"Whare horoi",def:"ablution block, bathroom"},
+  {term:"Aroha",def:"compassion, tenderness, sustaining love"},
+  {term:"Ihi",def:"power, authority, essential force"},
+  {term:"Mana",def:"authority, power; reputation, influence"},
+  {term:"Manaakitanga",def:"respect for hosts or kindness to guests, to entertain"},
+  {term:"Mauri",def:"hidden essential life force"},
+  {term:"Noa",def:"safe from tapu, non-sacred"},
+  {term:"Raupatu",def:"confiscate, take by force"},
+  {term:"Rohe",def:"boundary, territory of an iwi or hapū"},
+  {term:"Taihoa",def:"to delay, to wait, to hold off"},
+  {term:"Tapu",def:"sacred, not to be touched, taboo"},
+  {term:"Tiaki",def:"to care for, look after, guard"},
+  {term:"Taonga",def:"treasured possession or cultural item"},
+  {term:"Tino rangatiratanga",def:"paramount authority, sometimes used for sovereignty"},
+  {term:"Tūrangawaewae",def:"a place to stand, a place to belong"},
+  {term:"Wehi",def:"to be held in awe"},
+  {term:"Whakapapa",def:"genealogy, to recite genealogy"},
+  {term:"Whenua",def:"land, homeland, country (also afterbirth, placenta)"},
+  {term:"Ariki",def:"male or female of high inherited rank"},
+  {term:"Hapū",def:"clan, sub-tribe"},
+  {term:"Iwi",def:"people, nation (tribe)"},
+  {term:"Kaumātua",def:"elder or elders"},
+  {term:"Ngāi Tātou",def:"a term for everyone present — 'we all'"},
+  {term:"Pākehā",def:"Māori word for people of British/European origin"},
+  {term:"Rangatira",def:"person of chiefly rank, boss, owner"},
+  {term:"Tama",def:"son, young man, youth"},
+  {term:"Tamāhine",def:"daughter"},
+  {term:"Tamaiti",def:"one child"},
+  {term:"Tamariki",def:"children"},
+  {term:"Tāne",def:"man/men, husband(s)"},
+  {term:"Teina/taina",def:"junior relative, younger sibling"},
+  {term:"Tipuna/tupuna",def:"ancestor"},
+  {term:"Tuahine",def:"sister of a man"},
+  {term:"Tuakana",def:"senior relative, older sibling"},
+  {term:"Tungāne",def:"brother of a sister"},
+  {term:"Wahine/wāhine",def:"woman, wife / women, wives"},
+  {term:"Waka",def:"canoe, canoe group"},
+  {term:"Whāngai",def:"fostered or adopted child"},
+  {term:"Whānau",def:"extended family"},
+  {term:"Whanaunga",def:"kin, relatives"},
+  {term:"Au",def:"current"},
+  {term:"Awa",def:"river"},
+  {term:"Iti",def:"small, little"},
+  {term:"Kai (in names)",def:"a place where food source was plentiful"},
+  {term:"Manga",def:"stream"},
+  {term:"Mānia",def:"plain"},
+  {term:"Maunga",def:"mountain"},
+  {term:"Moana",def:"sea or large inland sea"},
+  {term:"Motu",def:"island"},
+  {term:"Nui",def:"large, big"},
+  {term:"Ō / O",def:"means 'of'"},
+  {term:"One",def:"sand, earth"},
+  {term:"Pae",def:"ridge, range"},
+  {term:"Papa",def:"flat"},
+  {term:"Poto",def:"short"},
+  {term:"Puke",def:"hill"},
+  {term:"Roa",def:"long"},
+  {term:"Roto",def:"lake"},
+  {term:"Tai",def:"coast, tide"},
+  {term:"Wai",def:"water"},
+  {term:"Whanga",def:"harbour, bay"},
+  {term:"E noho rā",def:"Goodbye (from a person leaving)"},
+  {term:"Haere rā",def:"Goodbye (from a person staying)"},
+  {term:"Hei konā rā",def:"Goodbye (less formal)"},
+  {term:"Kia ora",def:"Hi! G'day!"},
+  {term:"Mōrena",def:"(Good) morning!"},
+  {term:"Tēnā koe",def:"formal greeting to one person"},
+  {term:"Tēnā kōrua",def:"formal greeting to two people"},
+  {term:"Tēnā koutou",def:"formal greeting to many people"},
+  {term:"Tēnā tātou katoa",def:"formal inclusive greeting to everybody present"},
+  {term:"Arero",def:"tongue"},
+  {term:"Ihu",def:"nose"},
+  {term:"Kakī",def:"neck"},
+  {term:"Kauae",def:"chin"},
+  {term:"Kōpū",def:"womb"},
+  {term:"Māhunga",def:"hair or head"},
+  {term:"Manawa",def:"heart"},
+  {term:"Niho",def:"teeth"},
+  {term:"Poho",def:"chest"},
+  {term:"Puku",def:"belly, stomach"},
+  {term:"Raho",def:"testicles"},
+  {term:"Ringa",def:"hand, arm"},
+  {term:"Tenetene",def:"vagina"},
+  {term:"Toto",def:"blood"},
+  {term:"Tou",def:"anus"},
+  {term:"Turi",def:"knee"},
+  {term:"Tūtae",def:"excrement"},
+  {term:"ū",def:"breast"},
+  {term:"Upoko",def:"head"},
+  {term:"Ure",def:"penis"},
+  {term:"Waewae",def:"foot/feet, leg/legs"}
+];
+
+// App state
+let state = {
+  mode:'flash',
+  index:0,
+  order:[],
+  correct:0,
+  total:0,
+  showMacrons:true
+};
+
+const el = id => document.getElementById(id);
+
+function init(){
+  // load settings from localStorage
+  const saved = JSON.parse(localStorage.getItem('maori_quiz_state')||'null');
+  if(saved) Object.assign(state,saved);
+  state.showMacrons = (localStorage.getItem('maori_show_macrons')||'1')==='1';
+  document.getElementById('macrons').checked = state.showMacrons;
+
+  const shuffleChecked = document.getElementById('shuffle').checked;
+  buildOrder(shuffleChecked);
+  bindUi();
+  render();
+  updateScoreUI();
+}
+
+function buildOrder(shuffle=true){
+  state.order = DATA.map((_,i)=>i);
+  if(shuffle) state.order = shuffleArray(state.order);
+  state.index = 0;
+}
+
+function bindUi(){
+  document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.mode').forEach(x=>x.classList.remove('mode-active'));
+    b.classList.add('mode-active');
+    state.mode = b.dataset.mode; state.total=0; state.correct=0; render(); updateScoreUI(); saveState();
+  }));
+  document.getElementById('shuffle').addEventListener('change',()=>{buildOrder(document.getElementById('shuffle').checked); render(); saveState();});
+  document.getElementById('macrons').addEventListener('change',(e)=>{state.showMacrons=e.target.checked; localStorage.setItem('maori_show_macrons', e.target.checked? '1':'0'); render();});
+  document.getElementById('download').addEventListener('click',downloadSelf);
+  document.getElementById('reset').addEventListener('click',()=>{if(confirm('Clear saved progress?')){localStorage.removeItem('maori_quiz_state'); localStorage.removeItem('maori_show_macrons'); state.correct=0; state.total=0; buildOrder(true); render(); updateScoreUI();}});
+}
+
+function render(){
+  const main = el('mainCard');
+  main.innerHTML='';
+  if(state.mode==='flash'){ renderFlash(main); }
+  else if(state.mode==='mc'){ renderMC(main); }
+  else if(state.mode==='type'){ renderType(main); }
+  else if(state.mode==='match'){ renderMatch(main); }
+}
+
+function renderFlash(container){
+  const idx = state.order[state.index];
+  const item = DATA[idx];
+  const term = format(item.term);
+  const def = item.def;
+  container.innerHTML = `
+    <div class="term">${term}</div>
+    <div class="def" id="flashDef">(tap to reveal definition)</div>
+    <div style="display:flex;gap:8px;margin-top:12px;width:100%">
+      <button id="reveal">Reveal</button>
+      <button id="prev">Prev</button>
+      <button id="next">Next</button>
+      <button id="markKnown">I know this</button>
+    </div>
+  `;
+  el('reveal').addEventListener('click',()=>{el('flashDef').textContent = def});
+  el('next').addEventListener('click',()=>{state.index=(state.index+1)%state.order.length; render();});
+  el('prev').addEventListener('click',()=>{state.index=(state.index-1+state.order.length)%state.order.length; render();});
+  el('markKnown').addEventListener('click',()=>{state.correct++; state.total++; nextItem(); updateScoreUI(); saveState();});
+}
+
+function renderMC(container){
+  const idx = state.order[state.index];
+  const item = DATA[idx];
+  const term = format(item.term);
+  // build 4 choices (defs)
+  const choices = [item.def];
+  while(choices.length<4){ const r = DATA[Math.floor(Math.random()*DATA.length)].def; if(!choices.includes(r)) choices.push(r); }
+  shuffleArray(choices);
+  container.innerHTML = `
+    <div class="term">${term}</div>
+    <div class="choices" id="choices"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;width:100%">
+      <button id="skip">Skip</button>
+      <button id="show">Show answer</button>
+    </div>
+  `;
+  const chEl = el('choices');
+  choices.forEach(c=>{
+    const d = document.createElement('div'); d.className='choice'; d.textContent=c; d.addEventListener('click',()=>selectChoice(d,c,item.def)); chEl.appendChild(d);
+  });
+  el('skip').addEventListener('click',()=>{state.total++; nextItem(); updateScoreUI(); saveState();});
+  el('show').addEventListener('click',()=>{revealAnswerMC(chEl,item.def)});
+}
+
+function selectChoice(node,choice,correct){
+  if(node.classList.contains('disabled')) return;
+  node.classList.add(choice===correct? 'correct':'wrong');
+  node.classList.add('disabled');
+  state.total++;
+  if(choice===correct){state.correct++;}
+  else{
+    // highlight correct
+    Array.from(node.parentNode.children).forEach(c=>{ if(c.textContent===correct) c.classList.add('correct'); });
+  }
+  updateScoreUI(); saveState();
+  setTimeout(()=>{nextItem();},800);
+}
+
+function revealAnswerMC(container,correct){
+  Array.from(container.children).forEach(c=>{ if(c.textContent===correct) c.classList.add('correct'); else c.classList.add('wrong'); });
+  state.total++; updateScoreUI(); saveState(); setTimeout(()=>nextItem(),900);
+}
+
+function renderType(container){
+  const idx = state.order[state.index];
+  const item = DATA[idx];
+  container.innerHTML = `
+    <div class="term">${format(item.term)}</div>
+    <div class="small">Type the correct definition (short answer)</div>
+    <input type="text" id="typed" placeholder="Type definition here..." autocapitalize="off">
+    <div style="display:flex;gap:8px;margin-top:12px;width:100%">
+      <button id="submit">Submit</button>
+      <button id="showAns">Show</button>
+      <button id="nextBtn">Next</button>
+    </div>
+  `;
+  el('submit').addEventListener('click',()=>{
+    const val = el('typed').value.trim().toLowerCase();
+    const ok = item.def.toLowerCase().split(/[;,.]/)[0];
+    if(val.length===0) return;
+    state.total++;
+    if(ok && val.includes(ok.split(' ')[0])){ state.correct++; alert('Correct!'); }
+    else{ alert('Marked incorrect.\nAnswer: '+item.def); }
+    updateScoreUI(); saveState(); setTimeout(()=>nextItem(),300);
+  });
+  el('showAns').addEventListener('click',()=>{alert(item.def)});
+  el('nextBtn').addEventListener('click',()=>{state.total++; nextItem(); updateScoreUI(); saveState();});
+}
+
+function renderMatch(container){
+  // simple matching: choose the correct definition from dropdown
+  const leftIndex = state.order[state.index];
+  const leftItem = DATA[leftIndex];
+  const options = shuffleArray(DATA.map(d=>d.def)).slice(0,6);
+  if(!options.includes(leftItem.def)) options[Math.floor(Math.random()*options.length)] = leftItem.def;
+  container.innerHTML = `
+    <div class="term">${format(leftItem.term)}</div>
+    <div class="small">Pick the matching definition</div>
+    <select id="matchSel">${options.map(o=>`<option>${o}</option>`).join('')}</select>
+    <div style="display:flex;gap:8px;margin-top:12px;width:100%">
+      <button id="check">Check</button>
+      <button id="nextm">Next</button>
+    </div>
+  `;
+  el('check').addEventListener('click',()=>{
+    const sel = el('matchSel').value; state.total++; if(sel===leftItem.def){state.correct++; alert('Correct!');} else {alert('Wrong — answer: '+leftItem.def);} updateScoreUI(); saveState(); setTimeout(()=>nextItem(),300);
+  });
+  el('nextm').addEventListener('click',()=>{state.total++; nextItem(); updateScoreUI(); saveState();});
+}
+
+function nextItem(){ state.index = (state.index+1)%state.order.length; render(); }
+
+function updateScoreUI(){ el('scoreText').textContent = `${state.correct} / ${state.total}`; const pct = state.total? Math.round(state.correct/state.total*100):0; el('accuracy').textContent = state.total? `${pct}%`:'—'; el('bar').style.width = (state.order.length? Math.round((state.index/state.order.length)*100):0)+'%'; }
+
+function saveState(){ localStorage.setItem('maori_quiz_state', JSON.stringify(state)); }
+
+function downloadSelf(){
+  // generate the same HTML file for download
+  const blob = new Blob([document.documentElement.outerHTML], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'maori_vocab_quiz.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+// utilities
+function shuffleArray(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+function format(s){ if(!state.showMacrons) return s.replace(/[āēīōūĀĒĪŌŪ]/g,'$'); return s; }
+
+// initialize
+init();
+</script>
+</body>
+</html>
