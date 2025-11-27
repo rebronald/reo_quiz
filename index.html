@@ -56,7 +56,7 @@
       </div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
         <div class="tiny">Shuffle: <input type="checkbox" id="shuffle" checked></div>
-        <div class="tiny">Show macrons: <input type="checkbox" id="macrons" checked></div>
+<!--        <div class="tiny">Show macrons: <input type="checkbox" id="macrons" checked></div>  -->
       </div>
     </nav>
 
@@ -192,7 +192,7 @@ let state = {
   order: [],
   correct: 0,
   total: 0,
-  showMacrons: true,
+  //showMacrons: true,
   direction: 'm2e' // m2e = Māori → English, e2m = English → Māori
 };
 
@@ -202,8 +202,8 @@ const el = id => document.getElementById(id);
 function init(){
   const saved = JSON.parse(localStorage.getItem('maori_quiz_state')||'null');
   if(saved) Object.assign(state,saved);
-  state.showMacrons = (localStorage.getItem('maori_show_macrons')||'1')==='1';
-  document.getElementById('macrons').checked = state.showMacrons;
+  //state.showMacrons = (localStorage.getItem('maori_show_macrons')||'1')==='1';
+  //document.getElementById('macrons').checked = state.showMacrons;
 
   buildOrder(document.getElementById('shuffle').checked);
   bindUi();
@@ -225,11 +225,11 @@ function bindUi(){
     render(); saveState();
   });
 
-  document.getElementById('macrons').addEventListener('change',(e)=>{
-    state.showMacrons=e.target.checked;
-    localStorage.setItem('maori_show_macrons', e.target.checked? '1':'0');
-    render();
-  });
+  //document.getElementById('macrons').addEventListener('change',(e)=>{
+//    state.showMacrons=e.target.checked;
+//    localStorage.setItem('maori_show_macrons', e.target.checked? '1':'0');
+//    render();
+//  });
 
   // direction toggle button
   const dirBtn = document.createElement('button');
@@ -246,7 +246,7 @@ function bindUi(){
   document.getElementById('reset').addEventListener('click',()=>{
     if(confirm('Clear saved progress?')){
       localStorage.removeItem('maori_quiz_state');
-      localStorage.removeItem('maori_show_macrons');
+      //localStorage.removeItem('maori_show_macrons');
       state.correct=0; state.total=0;
       buildOrder(true); render(); updateScoreUI();
     }
@@ -432,10 +432,14 @@ function downloadSelf(){
 function shuffleArray(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
 
 // format: if macrons off, remove macrons (ā->a etc.)
+//function format(s){
+ // if(state.showMacrons) return s;
+//  return //s.replace(/ā/g,'a').replace(/ē/g,'e').replace(/ī/g,'i').replace(/ō/g,'o').replace(/ū/g,'u')
+          //.replace(/Ā/g,'A').replace(/Ē/g,'E').replace(/Ī/g,'I').replace(/Ō/g,'O').replace(/Ū/g,'//U');
+//}
+
 function format(s){
-  if(state.showMacrons) return s;
-  return s.replace(/ā/g,'a').replace(/ē/g,'e').replace(/ī/g,'i').replace(/ō/g,'o').replace(/ū/g,'u')
-          .replace(/Ā/g,'A').replace(/Ē/g,'E').replace(/Ī/g,'I').replace(/Ō/g,'O').replace(/Ū/g,'U');
+  return s;  // always keep macrons
 }
 
 // simple escape for inserted HTML text (safety + correct display)
