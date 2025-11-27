@@ -39,7 +39,7 @@
     <header>
       <div>
         <h1>Māori Vocabulary Trainer</h1>
-        <div class="tiny">Standalone, phone-optimized — multiple modes: Flashcard, Multiple-choice, Type-in, Match</div>
+        <div class="tiny">Phone-friendly — Flashcard, MCQ, Type-in, Match</div>
       </div>
       <div class="controls">
         <button id="download" class="download">Download HTML</button>
@@ -52,7 +52,7 @@
         <button class="mode pill mode-active" data-mode="flash">Flashcards</button>
         <button class="mode pill" data-mode="mc">Multiple-choice</button>
         <button class="mode pill" data-mode="type">Type-in</button>
-        <button class="mode pill" data-mode="match">Match (pairing)</button>
+        <button class="mode pill" data-mode="match">Match</button>
       </div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
         <div class="tiny">Shuffle: <input type="checkbox" id="shuffle" checked></div>
@@ -72,10 +72,120 @@
   </div>
 
 <script>
-// Added: direction toggle (Māori→English or English→Māori) and explicit feedback
+// === DATA: terms with short definitions (mostly ≤ 5 words) ===
+const DATA = [
+  { term: "Hui", def: "meeting" },
+  { term: "Marae", def: "meeting area" },
+  { term: "Haere mai", def: "welcome" },
+  { term: "Nau mai", def: "welcome" },
+  { term: "Tangihanga", def: "funeral rites" },
+  { term: "Tangi", def: "to mourn" },
+  { term: "Karanga", def: "welcome call" },
+  { term: "Manuhiri", def: "guests" },
+  { term: "Tangata whenua", def: "local people" },
+  { term: "Whaikōrero", def: "formal speech" },
+  { term: "Kaikōrero", def: "speaker" },
+  { term: "Haka", def: "challenge dance/chant" },
+  { term: "Waiata", def: "song" },
+  { term: "Koha", def: "gift" },
+  { term: "Wharenui", def: "meeting house" },
+  { term: "Whare whakairo", def: "carved meeting house" },
+  { term: "Whare kai", def: "dining hall" },
+  { term: "Whare paku", def: "toilet" },
+  { term: "Whare horoi", def: "bathroom" },
+  { term: "Aroha", def: "love, compassion" },
+  { term: "Ihi", def: "authority, power" },
+  { term: "Mana", def: "authority, prestige" },
+  { term: "Manaakitanga", def: "hospitality" },
+  { term: "Mauri", def: "life force" },
+  { term: "Noa", def: "non-sacred" },
+  { term: "Raupatu", def: "confiscation" },
+  { term: "Rohe", def: "territory" },
+  { term: "Taihoa", def: "wait, delay" },
+  { term: "Tapu", def: "sacred, taboo" },
+  { term: "Tiaki", def: "to care for" },
+  { term: "Taonga", def: "treasure" },
+  { term: "Tino rangatiratanga", def: "sovereignty" },
+  { term: "Tūrangawaewae", def: "place to stand" },
+  { term: "Wehi", def: "awe" },
+  { term: "Whakapapa", def: "genealogy" },
+  { term: "Whenua", def: "land" },
+  { term: "Ariki", def: "high chief" },
+  { term: "Hapū", def: "sub-tribe" },
+  { term: "Iwi", def: "tribe" },
+  { term: "Kaumātua", def: "elders" },
+  { term: "Ngāi Tātou", def: "all of us" },
+  { term: "Pākehā", def: "NZ European" },
+  { term: "Rangatira", def: "chief" },
+  { term: "Tama", def: "son, young man" },
+  { term: "Tamāhine", def: "daughter" },
+  { term: "Tamaiti", def: "child" },
+  { term: "Tamariki", def: "children" },
+  { term: "Tāne", def: "man" },
+  { term: "Teina / taina", def: "younger sibling" },
+  { term: "Tipuna / tupuna", def: "ancestor" },
+  { term: "Tuahine", def: "sister (of man)" },
+  { term: "Tuakana", def: "older sibling" },
+  { term: "Tungāne", def: "brother (of woman)" },
+  { term: "Wahine / wāhine", def: "woman / women" },
+  { term: "Waka", def: "canoe group" },
+  { term: "Whāngai", def: "adopted child" },
+  { term: "Whānau", def: "family" },
+  { term: "Whanaunga", def: "relatives" },
+  { term: "Au", def: "current" },
+  { term: "Awa", def: "river" },
+  { term: "Iti", def: "small" },
+  { term: "Kai (in names)", def: "food place" },
+  { term: "Manga", def: "stream" },
+  { term: "Mānia", def: "plain" },
+  { term: "Maunga", def: "mountain" },
+  { term: "Moana", def: "sea" },
+  { term: "Motu", def: "island" },
+  { term: "Nui", def: "big" },
+  { term: "Ō / O", def: "place of / of" },
+  { term: "One", def: "sand" },
+  { term: "Pae", def: "ridge" },
+  { term: "Papa", def: "flat" },
+  { term: "Poto", def: "short" },
+  { term: "Puke", def: "hill" },
+  { term: "Roa", def: "long" },
+  { term: "Roto", def: "lake" },
+  { term: "Tai", def: "coast, tide" },
+  { term: "Wai", def: "water" },
+  { term: "Whanga", def: "harbour" },
+  { term: "E noho rā", def: "goodbye (leaving)" },
+  { term: "Haere rā", def: "goodbye (staying)" },
+  { term: "Hei konā rā", def: "goodbye (less formal)" },
+  { term: "Kia ora", def: "hello" },
+  { term: "Mōrena", def: "morning" },
+  { term: "Tēnā koe", def: "greetings (one)" },
+  { term: "Tēnā kōrua", def: "greetings (two)" },
+  { term: "Tēnā koutou", def: "greetings (many)" },
+  { term: "Tēnā tātou katoa", def: "greetings (all)" },
+  { term: "Arero", def: "tongue" },
+  { term: "Ihu", def: "nose" },
+  { term: "Kakī", def: "neck" },
+  { term: "Kauae", def: "chin" },
+  { term: "Kōpū", def: "womb" },
+  { term: "Māhunga", def: "head / hair" },
+  { term: "Manawa", def: "heart" },
+  { term: "Niho", def: "teeth" },
+  { term: "Poho", def: "chest" },
+  { term: "Puku", def: "stomach" },
+  { term: "Raho", def: "testicles" },
+  { term: "Ringa", def: "hand / arm" },
+  { term: "Tenetene", def: "vagina" },
+  { term: "Toto", def: "blood" },
+  { term: "Tou", def: "anus" },
+  { term: "Turi", def: "knee" },
+  { term: "Tūtae", def: "excrement" },
+  { term: "Ū", def: "breast" },
+  { term: "Upoko", def: "head" },
+  { term: "Ure", def: "penis" },
+  { term: "Waewae", def: "leg / foot" }
+];
 
-const DATA = [...DATA_HERE_PLACEHOLDER...]; // placeholder — original DATA kept as-is
-
+// === App state ===
 let state = {
   mode: 'flash',
   index: 0,
@@ -83,11 +193,12 @@ let state = {
   correct: 0,
   total: 0,
   showMacrons: true,
-  direction: 'm2e' // NEW: m2e = Māori → English, e2m = English → Māori
+  direction: 'm2e' // m2e = Māori → English, e2m = English → Māori
 };
 
 const el = id => document.getElementById(id);
 
+// initialize
 function init(){
   const saved = JSON.parse(localStorage.getItem('maori_quiz_state')||'null');
   if(saved) Object.assign(state,saved);
@@ -120,7 +231,7 @@ function bindUi(){
     render();
   });
 
-  // NEW: direction toggle
+  // direction toggle button
   const dirBtn = document.createElement('button');
   dirBtn.textContent = 'Switch: Māori → English';
   dirBtn.className = 'pill';
@@ -142,7 +253,11 @@ function bindUi(){
   });
 }
 
-function buildOrder(shuffle=true){ state.order = DATA.map((_,i)=>i); if(shuffle) shuffleArray(state.order); state.index=0; }
+function buildOrder(shuffle=true){
+  state.order = DATA.map((_,i)=>i);
+  if(shuffle) shuffleArray(state.order);
+  state.index = 0;
+}
 
 function render(){
   const main = el('mainCard'); main.innerHTML='';
@@ -152,62 +267,62 @@ function render(){
   else if(state.mode==='match') renderMatch(main);
 }
 
-// Helper: chooses question side based on direction
+// choose question/answer sides based on direction
 function getSides(item){
   if(state.direction==='m2e'){
-    return {question:format(item.term), answer:item.def};
+    return { question: format(item.term), answer: item.def };
   } else {
-    return {question:item.def, answer:format(item.term)};
+    return { question: item.def, answer: format(item.term) };
   }
 }
 
-// FLASHCARDS ----------------------------------------------------
+// FLASHCARDS
 function renderFlash(container){
   const item = DATA[state.order[state.index]];
-  const {question,answer}=getSides(item);
-  container.innerHTML=
-  `<div class="term">${question}</div>
-   <div class="def" id="flashDef">(tap to reveal answer)</div>
-   <div style="display:flex;gap:8px;margin-top:12px;width:100%">
-     <button id="reveal">Reveal</button>
-     <button id="prev">Prev</button>
-     <button id="next">Next</button>
-     <button id="markKnown">I know this</button>
-   </div>`;
-  el('reveal').onclick=()=>{el('flashDef').textContent=answer;};
-  el('next').onclick=()=>{state.index=(state.index+1)%state.order.length; render();};
-  el('prev').onclick=()=>{state.index=(state.index-1+state.order.length)%state.order.length; render();};
-  el('markKnown').onclick=()=>{state.correct++; state.total++; nextItem(); updateScoreUI(); saveState();};
+  const {question,answer} = getSides(item);
+  container.innerHTML =
+    `<div class="term">${escapeHtml(question)}</div>
+     <div class="def" id="flashDef">(tap to reveal answer)</div>
+     <div style="display:flex;gap:8px;margin-top:12px;width:100%">
+       <button id="reveal">Reveal</button>
+       <button id="prev">Prev</button>
+       <button id="next">Next</button>
+       <button id="markKnown">I know this</button>
+     </div>`;
+  el('reveal').onclick = ()=>{ el('flashDef').textContent = answer; };
+  el('next').onclick = ()=>{ state.index = (state.index+1) % state.order.length; render(); };
+  el('prev').onclick = ()=>{ state.index = (state.index-1+state.order.length) % state.order.length; render(); };
+  el('markKnown').onclick = ()=>{ state.correct++; state.total++; nextItem(); updateScoreUI(); saveState(); };
 }
 
-// MULTIPLE CHOICE ----------------------------------------------------
+// MULTIPLE CHOICE
 function renderMC(container){
   const item = DATA[state.order[state.index]];
-  const {question,answer}=getSides(item);
-  const choices=[answer];
-  while(choices.length<4){
+  const {question,answer} = getSides(item);
+  const choices = [answer];
+  while(choices.length < 4){
     const r = getSides(DATA[Math.floor(Math.random()*DATA.length)]).answer;
     if(!choices.includes(r)) choices.push(r);
   }
   shuffleArray(choices);
 
-  container.innerHTML=
-  `<div class="term">${question}</div>
-   <div class="choices" id="choices"></div>
-   <div style="display:flex;gap:8px;margin-top:12px;width:100%">
-     <button id="skip">Skip</button>
-     <button id="show">Show answer</button>
-   </div>`;
+  container.innerHTML =
+    `<div class="term">${escapeHtml(question)}</div>
+     <div class="choices" id="choices"></div>
+     <div style="display:flex;gap:8px;margin-top:12px;width:100%">
+       <button id="skip">Skip</button>
+       <button id="show">Show answer</button>
+     </div>`;
 
   const chEl = el('choices');
   choices.forEach(c=>{
-    const d=document.createElement('div'); d.className='choice'; d.textContent=c;
-    d.onclick=()=>selectChoice(d,c,answer);
+    const d = document.createElement('div'); d.className='choice'; d.textContent = c;
+    d.onclick = ()=>selectChoice(d,c,answer);
     chEl.appendChild(d);
   });
 
-  el('skip').onclick=()=>{state.total++; nextItem(); updateScoreUI(); saveState();};
-  el('show').onclick=()=>{revealAnswerMC(chEl,answer)};
+  el('skip').onclick = ()=>{ state.total++; nextItem(); updateScoreUI(); saveState(); };
+  el('show').onclick = ()=>{ revealAnswerMC(chEl,answer); };
 }
 
 function selectChoice(node,choice,correct){
@@ -218,12 +333,14 @@ function selectChoice(node,choice,correct){
   if(choice===correct){
     node.classList.add('correct'); state.correct++;
   } else {
-    node.classList.add('wrong'); correctNode.classList.add('correct');
-    alert('Incorrect. Correct answer: '+correct);
+    node.classList.add('wrong');
+    if(correctNode) correctNode.classList.add('correct');
+    // explicit text feedback
+    setTimeout(()=> alert('Incorrect. Correct answer: ' + correct), 40);
   }
 
   updateScoreUI(); saveState();
-  setTimeout(()=>nextItem(),900);
+  setTimeout(()=> nextItem(), 900);
 }
 
 function revealAnswerMC(container,correct){
@@ -231,86 +348,100 @@ function revealAnswerMC(container,correct){
     if(c.textContent===correct) c.classList.add('correct');
     else c.classList.add('wrong');
   });
-  state.total++; updateScoreUI(); saveState(); setTimeout(()=>nextItem(),900);
+  state.total++; updateScoreUI(); saveState(); setTimeout(()=> nextItem(),900);
 }
 
-// TYPE-IN --------------------------------------------------------------
+// TYPE-IN
 function renderType(container){
   const item = DATA[state.order[state.index]];
-  const {question,answer}=getSides(item);
+  const {question,answer} = getSides(item);
 
-  container.innerHTML=
-  `<div class="term">${question}</div>
-   <div class="small">Type the answer</div>
-   <input type="text" id="typed" placeholder="Type here">
-   <div style="display:flex;gap:8px;margin-top:12px;width:100%">
-     <button id="submit">Submit</button>
-     <button id="showAns">Show</button>
-     <button id="nextBtn">Next</button>
-   </div>`;
+  container.innerHTML =
+    `<div class="term">${escapeHtml(question)}</div>
+     <div class="small">Type the answer</div>
+     <input type="text" id="typed" placeholder="Type here">
+     <div style="display:flex;gap:8px;margin-top:12px;width:100%">
+       <button id="submit">Submit</button>
+       <button id="showAns">Show</button>
+       <button id="nextBtn">Next</button>
+     </div>`;
 
-  el('submit').onclick=()=>{
+  el('submit').onclick = ()=>{
     const val = el('typed').value.trim().toLowerCase();
     state.total++;
+    // simple fuzzy check: check whether user's first word appears in answer
     if(val && answer.toLowerCase().includes(val.split(' ')[0])){
-      alert('Correct!'); state.correct++;
+      setTimeout(()=> alert('Correct!'), 40);
+      state.correct++;
     } else {
-      alert('Incorrect. Correct answer: '+answer);
+      setTimeout(()=> alert('Incorrect. Correct answer: ' + answer), 40);
     }
     updateScoreUI(); saveState(); nextItem();
   };
 
-  el('showAns').onclick=()=>alert(answer);
-  el('nextBtn').onclick=()=>{state.total++; nextItem(); updateScoreUI(); saveState();};
+  el('showAns').onclick = ()=> alert(answer);
+  el('nextBtn').onclick = ()=> { state.total++; nextItem(); updateScoreUI(); saveState(); };
 }
 
-// MATCH ---------------------------------------------------------------
+// MATCH
 function renderMatch(container){
   const item = DATA[state.order[state.index]];
-  const {question,answer}=getSides(item);
+  const {question,answer} = getSides(item);
 
   const options = shuffleArray(DATA.map(d=>getSides(d).answer)).slice(0,6);
   if(!options.includes(answer)) options[Math.floor(Math.random()*options.length)] = answer;
 
-  container.innerHTML=
-  `<div class="term">${question}</div>
-   <div class="small">Pick the match</div>
-   <select id="matchSel">${options.map(o=>`<option>${o}</option>`).join('')}</select>
-   <div style="display:flex;gap:8px;margin-top:12px;width:100%">
-     <button id="check">Check</button>
-     <button id="nextm">Next</button>
-   </div>`;
+  container.innerHTML =
+    `<div class="term">${escapeHtml(question)}</div>
+     <div class="small">Pick the match</div>
+     <select id="matchSel">${options.map(o=>`<option>${escapeHtml(o)}</option>`).join('')}</select>
+     <div style="display:flex;gap:8px;margin-top:12px;width:100%">
+       <button id="check">Check</button>
+       <button id="nextm">Next</button>
+     </div>`;
 
-  el('check').onclick=()=>{
+  el('check').onclick = ()=>{
     const sel = el('matchSel').value;
     state.total++;
-    if(sel===answer){ state.correct++; alert('Correct!'); }
-    else { alert('Incorrect. Correct answer: '+answer); }
+    if(sel===answer){ state.correct++; setTimeout(()=> alert('Correct!'), 40); }
+    else { setTimeout(()=> alert('Incorrect. Correct answer: ' + answer), 40); }
     updateScoreUI(); saveState(); nextItem();
   };
 
-  el('nextm').onclick=()=>{state.total++; nextItem(); updateScoreUI(); saveState();};
+  el('nextm').onclick = ()=> { state.total++; nextItem(); updateScoreUI(); saveState(); };
 }
 
-//--------------------------------------------------------
-function nextItem(){ state.index=(state.index+1)%state.order.length; render(); }
+// navigation & helpers
+function nextItem(){ state.index = (state.index+1) % state.order.length; render(); }
 
-function updateScoreUI(){ el('scoreText').textContent=`${state.correct} / ${state.total}`;
+function updateScoreUI(){
+  el('scoreText').textContent = `${state.correct} / ${state.total}`;
   const pct = state.total? Math.round(state.correct/state.total*100):0;
   el('accuracy').textContent = state.total? `${pct}%`:'—';
-  el('bar').style.width = (state.order.length? Math.round((state.index/state.order.length)*100):0)+'%';
+  el('bar').style.width = (state.order.length? Math.round((state.index/state.order.length)*100):0) + '%';
 }
 
 function saveState(){ localStorage.setItem('maori_quiz_state', JSON.stringify(state)); }
 
 function downloadSelf(){
-  const blob=new Blob([document.documentElement.outerHTML],{type:'text/html'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download='maori_vocab_quiz.html'; a.click(); URL.revokeObjectURL(url);
+  const blob = new Blob([document.documentElement.outerHTML], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'maori_vocab_quiz.html'; a.click(); URL.revokeObjectURL(url);
 }
 
 function shuffleArray(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
-function format(s){ if(!state.showMacrons) return s.replace(/[āēīōūĀĒĪŌŪ]/g,'$'); return s; }
+
+// format: if macrons off, remove macrons (ā->a etc.)
+function format(s){
+  if(state.showMacrons) return s;
+  return s.replace(/ā/g,'a').replace(/ē/g,'e').replace(/ī/g,'i').replace(/ō/g,'o').replace(/ū/g,'u')
+          .replace(/Ā/g,'A').replace(/Ē/g,'E').replace(/Ī/g,'I').replace(/Ō/g,'O').replace(/Ū/g,'U');
+}
+
+// simple escape for inserted HTML text (safety + correct display)
+function escapeHtml(text){
+  return (text+'').replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
+}
 
 init();
 </script>
